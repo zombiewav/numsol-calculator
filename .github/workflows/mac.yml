@@ -1,0 +1,23 @@
+name: Build Mac App
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - run: pip install pyinstaller numpy sympy
+
+      - run: pyinstaller --onefile --noconsole main.py
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: mac-app
+          path: dist/*
