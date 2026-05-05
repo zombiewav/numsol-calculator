@@ -15,9 +15,9 @@ jobs:
 
       - run: pip install pyinstaller numpy sympy
 
-      - run: pyinstaller --onefile --noconsole main.py
+      - run: pyinstaller --onefile --noconsole --hidden-import=numpy --hidden-import=sympy main.py
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: mac-app
           path: dist/*
