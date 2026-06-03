@@ -1,77 +1,90 @@
+from decimal import Decimal, ROUND_HALF_UP
+
+
+def retain_6(value):
+    return float(
+        Decimal(str(value)).quantize(
+            Decimal("0.000001"),
+            rounding=ROUND_HALF_UP
+        )
+    )
+
+
+def format_6(value):
+    return f"{retain_6(value):.6f}"
+
+
 def regula_falsi_method(f, xL, xR, tol, max_iter):
-    xL = round(float(xL), 6)
-    xR = round(float(xR), 6)
+
+    xL = retain_6(float(xL))
+    xR = retain_6(float(xR))
     tol = float(tol)
 
-    fxL = round(float(f(xL)), 6)
-    fxR = round(float(f(xR)), 6)
+    fxL = retain_6(f(xL))
+    fxR = retain_6(f(xR))
 
     if abs(fxL) < tol:
         steps = [{
             "Iteration no": 1,
-            "xL": f"{xL:.6f}",
-            "xR": f"{xR:.6f}",
-            "xN": f"{xL:.6f}",
-            "f(xL)": f"{fxL:.6f}",
-            "f(xR)": f"{fxR:.6f}",
-            "f(xN)": f"{fxL:.6f}"
+            "xL": format_6(xL),
+            "xR": format_6(xR),
+            "xN": format_6(xL),
+            "f(xL)": format_6(fxL),
+            "f(xR)": format_6(fxR),
+            "f(xN)": format_6(fxL),
         }]
         return steps, xL
 
     if abs(fxR) < tol:
         steps = [{
             "Iteration no": 1,
-            "xL": f"{xL:.6f}",
-            "xR": f"{xR:.6f}",
-            "xN": f"{xR:.6f}",
-            "f(xL)": f"{fxL:.6f}",
-            "f(xR)": f"{fxR:.6f}",
-            "f(xN)": f"{fxR:.6f}"
+            "xL": format_6(xL),
+            "xR": format_6(xR),
+            "xN": format_6(xR),
+            "f(xL)": format_6(fxL),
+            "f(xR)": format_6(fxR),
+            "f(xN)": format_6(fxR),
         }]
         return steps, xR
 
-    if round(fxL * fxR, 6) > 0:
+    if retain_6(fxL * fxR) > 0:
         return None, "Root not bracketed. f(xL) and f(xR) must have opposite signs."
 
     steps = []
-    x_prev = None
 
     for i in range(1, max_iter + 1):
-        # use only rounded values
-        diff_f = round(fxL - fxR, 6)
+
+        diff_f = retain_6(fxL - fxR)
+
         if abs(diff_f) < 1e-12:
             return None, "Error: Division by zero."
 
-        xN = round(xR - (fxR * (xL - xR)) / diff_f, 6)
-        fxN = round(float(f(xN)), 6)
+        xN = retain_6(
+            xR - (fxR * (xL - xR)) / diff_f
+        )
+
+        fxN = retain_6(f(xN))
 
         steps.append({
             "Iteration no": i,
-            "xL": f"{xL:.6f}",
-            "xR": f"{xR:.6f}",
-            "xN": f"{xN:.6f}",
-            "f(xL)": f"{fxL:.6f}",
-            "f(xR)": f"{fxR:.6f}",
-            "f(xN)": f"{fxN:.6f}",
+            "xL": format_6(xL),
+            "xR": format_6(xR),
+            "xN": format_6(xN),
+            "f(xL)": format_6(fxL),
+            "f(xR)": format_6(fxR),
+            "f(xN)": format_6(fxN),
         })
 
-        # stopping conditions based on rounded values
+        # Classroom / video-style stopping condition
         if abs(fxN) < tol:
             return steps, xN
 
-        if x_prev is not None:
-            error = round(abs(xN - x_prev), 6)
-            if error < tol:
-                return steps, xN
-
-        # bracket update using rounded values
-        if round(fxL * fxN, 6) < 0:
+        # bracket update
+        if retain_6(fxL * fxN) < 0:
             xR = xN
             fxR = fxN
         else:
             xL = xN
             fxL = fxN
-
-        x_prev = xN
 
     return steps, xN

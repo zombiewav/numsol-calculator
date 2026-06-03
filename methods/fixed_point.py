@@ -1,7 +1,22 @@
+from decimal import Decimal, ROUND_HALF_UP
 import sympy as sp
 
 
+def retain_6(value):
+    return float(
+        Decimal(str(value)).quantize(
+            Decimal("0.000001"),
+            rounding=ROUND_HALF_UP
+        )
+    )
+
+
+def format_6(value):
+    return f"{retain_6(value):.6f}"
+
+
 def fixed_point_iteration(g_lambda, x0, tol, max_iter, g_str):
+
     steps = []
     x_sym = sp.symbols('x')
 
@@ -12,38 +27,57 @@ def fixed_point_iteration(g_lambda, x0, tol, max_iter, g_str):
     except Exception as e:
         return None, f"Invalid g(x): {e}"
 
-    x_prev = round(float(x0), 6)
+    x_prev = retain_6(float(x0))
     tol = float(tol)
 
+    # convergence warning only
     try:
-        dg_at_x0 = round(float(dg_lambda(x_prev)), 6)
+        dg_at_x0 = retain_6(dg_lambda(x_prev))
     except Exception as e:
         return None, f"Convergence test error: {e}"
 
+    convergence_warning = None
+
     if abs(dg_at_x0) >= 1:
-        return None, f"Convergence test failed: |g'(x0)| = {abs(dg_at_x0):.6f}. Enter a different g(x)."
+        convergence_warning = (
+            f"Warning: |g'(x0)| = {abs(dg_at_x0):.6f} ≥ 1. "
+            f"The method may not converge."
+        )
 
     for i in range(1, max_iter + 1):
+
         try:
-            # compute using rounded value only
-            gx = round(float(g_lambda(x_prev)), 6)
+            gx = retain_6(g_lambda(x_prev))
         except Exception as e:
             return None, f"Calculation error: {e}"
 
-        # error based on rounded values
-        error = round(abs(gx - x_prev), 6)
+        # current relative approximate error
+        if gx == 0:
+            current_error_value = 0.0 if gx == x_prev else float("inf")
+        else:
+            current_error_value = retain_6(
+                abs((gx - x_prev) / gx) * 100
+            )
 
-        steps.append({
-            "Iteration": i,
-            "x": f"{x_prev:.6f}",
-            "g(x)": f"{gx:.6f}",
-            "Error": f"{error:.6f}"
-        })
+        if i == 1:
+            steps.append({
+                "Iteration": i,
+                "x": format_6(x_prev),
+                "g(x)": format_6(gx),
+                "Error": ""
+            })
+        else:
+            steps.append({
+                "Iteration": i,
+                "x": format_6(x_prev),
+                "g(x)": format_6(gx),
+                "Error": format_6(current_error_value)
+            })
 
-        if error < tol:
+        # actual stopping condition
+        if current_error_value < tol:
             return steps, gx
 
-        # carry forward rounded value only
-        x_prev = round(float(gx), 6)
+        x_prev = gx
 
     return steps, x_prev

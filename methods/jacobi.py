@@ -10,6 +10,18 @@ from methods.iterative_utils import (
 )
 
 
+def _format_jacobi_result(values, iteration_count, residuals):
+    errors_text = ", ".join(
+        f"Error {idx} = {float(residual):.6f}"
+        for idx, residual in enumerate(residuals, start=1)
+    )
+    return (
+        f"{format_solution(values)} | "
+        f"Iterations = {iteration_count} | "
+        f"{errors_text}"
+    )
+
+
 def jacobi_method(matrix_str, tol, max_iter, initial_guess_str=""):
     try:
         matrix_a, vector_b = parse_augmented_matrix(matrix_str)
@@ -34,49 +46,44 @@ def jacobi_method(matrix_str, tol, max_iter, initial_guess_str=""):
 
     steps = []
 
+    residuals = np.abs(np.dot(matrix_a, current_values) - vector_b)
+
+    if all(float(residual) < tol for residual in residuals):
+        return [], _format_jacobi_result(current_values, 0, residuals)
+
     for iteration in range(1, max_iter + 1):
         previous_values = current_values.copy()
         next_values = np.zeros(len(vector_b), dtype=float)
-        equation_traces = []
 
         for row_idx in range(len(vector_b)):
             if abs(matrix_a[row_idx][row_idx]) < 1e-12:
                 return None, f"Error: Zero diagonal element at row {row_idx + 1}."
 
-            next_value, trace = evaluate_iteration_equation(
+            next_value, _ = evaluate_iteration_equation(
                 matrix_a[row_idx],
                 vector_b[row_idx],
                 previous_values,
                 row_idx
             )
 
-            # enforce rounding before storing
             next_value = round(float(next_value), 6)
             next_values[row_idx] = next_value
-
-            equation_traces.append(trace)
-
-        # compute error using rounded values only
-        max_error = round(
-            max(abs(next_values[i] - previous_values[i]) for i in range(len(next_values))),
-            6
-        )
 
         step = {"Iteration": iteration}
 
         for variable_name, value in zip(variable_names, next_values):
             step[variable_name] = f"{value:.6f}"
 
-        for eq_idx, trace in enumerate(equation_traces, start=1):
-            step[f"Equation {eq_idx}"] = trace
+        residuals = np.abs(np.dot(matrix_a, next_values) - vector_b)
 
-        step["Max Error"] = f"{max_error:.6f}"
+        for eq_idx, residual in enumerate(residuals, start=1):
+            step[f"Error {eq_idx}"] = f"{float(residual):.6f}"
+
         steps.append(step)
 
-        if max_error < tol:
-            return steps, format_solution(next_values)
+        if all(float(residual) < tol for residual in residuals):
+            return steps, _format_jacobi_result(next_values, iteration, residuals)
 
-        # carry forward rounded values only
         current_values = [round(float(v), 6) for v in next_values]
 
-    return steps, format_solution(current_values)   
+    return steps, _format_jacobi_result(current_values, max_iter, residuals)
