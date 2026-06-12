@@ -152,24 +152,35 @@ def format_solution(values):
 
 
 def evaluate_iteration_equation(coeff_row, rhs, values_used, solve_index):
-    diagonal = round(float(coeff_row[solve_index]), 6)
+
+    diagonal = float(coeff_row[solve_index])
+
     sigma = 0.0
     terms = []
 
     for col_idx, coefficient in enumerate(coeff_row):
+
         if col_idx == solve_index:
             continue
-        coefficient = round(float(coefficient), 6)
-        used_value = round(float(values_used[col_idx]), 6)
-        term = round(coefficient * used_value, 6)
-        sigma = round(sigma + term, 6)
-        terms.append(f"({coefficient:.6f}*{used_value:.6f})")
 
-    rhs = round(float(rhs), 6)  # FIXED
-    numerator = round(rhs - sigma, 6)
-    result = round(numerator / diagonal, 6)
+        coefficient = float(coefficient)
+        used_value = float(values_used[col_idx])
+
+        term = coefficient * used_value
+        sigma += term
+
+        terms.append(
+            f"({coefficient:.6f}*{used_value:.6f})"
+        )
+
+    result = (float(rhs) - sigma) / diagonal
+    result = round(result, 6)
 
     terms_text = " + ".join(terms) if terms else "0.000000"
-    trace = f"({rhs:.6f} - ({terms_text})) / {diagonal:.6f} = {result:.6f}"
+
+    trace = (
+        f"({float(rhs):.6f} - ({terms_text})) "
+        f"/ {diagonal:.6f} = {result:.6f}"
+    )
 
     return result, trace

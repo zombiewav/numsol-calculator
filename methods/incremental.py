@@ -5,10 +5,10 @@ def incremental_search_method(f, xl, increment, tol, max_iter):
     curr_inc = round(float(increment), 6)
     tol = round(float(tol), 6)
     
-    pass_num = 1
+    cluster_num = 1
     
-    # Outer loop: Keep creating new tables until the increment is smaller than the tolerance
-    while curr_inc >= tol and pass_num <= max_iter:
+    # Outer loop: Keep creating new clusters until the tolerance condition is satisfied
+    while cluster_num <= max_iter:
         step_num = 1
         x_val = curr_x
         
@@ -20,7 +20,7 @@ def incremental_search_method(f, xl, increment, tol, max_iter):
             
             # Record the current step
             steps.append({
-                "Table Pass": f"Iteration {pass_num}",
+                "Table Pass": f"Cluster {cluster_num}",
                 "Iter No.": step_num,
                 "x": f"{x_val:.6f}",
                 "f(X)": f"{fx_val:.6f}"
@@ -30,16 +30,29 @@ def incremental_search_method(f, xl, increment, tol, max_iter):
             if fx_val * next_fx <= 0:
                 # Record the final bound where the sign change occurred (to complete the bracket)
                 steps.append({
-                    "Table Pass": f"Iteration {pass_num}",
+                    "Table Pass": f"Cluster {cluster_num}",
                     "Iter No.": step_num + 1,
                     "x": f"{next_x:.6f}",
                     "f(X)": f"{next_fx:.6f}"
                 })
                 
-                # Zoom in for the next table pass
+                # Check the tolerance condition: use the endpoint with smaller absolute value
+                if abs(fx_val) < abs(next_fx):
+                    tolerance_check = abs(fx_val)
+                else:
+                    tolerance_check = abs(next_fx)
+                
+                if tolerance_check < tol:
+                    # Tolerance satisfied: stop and compute the final root
+                    final_root = round((x_val + next_x) / 2.0, 6)
+                    return steps, f"Approx Root: {final_root:.6f}"
+                
+                # Tolerance not satisfied: Create a new cluster
+                # Use the sign change interval as the new search interval
                 curr_x = x_val                       # Step back to the lower bound
-                curr_inc = round(curr_inc / 10.0, 6) # Shrink the increment by dividing by 10
-                break                                # Break the inner loop to start the next table
+                curr_inc = round(curr_inc / 10.0, 6) # Reduce the increment by a factor of 10
+                cluster_num += 1
+                break                                # Break the inner loop to start the next cluster
                 
             # Move forward if no sign change
             x_val = next_x
@@ -49,9 +62,4 @@ def incremental_search_method(f, xl, increment, tol, max_iter):
             if step_num > 1000:
                 return steps, "Error: No sign change found within limits."
                 
-        pass_num += 1
-        
-    # Calculate the final approximate root (midpoint of the very last, tiniest bracket)
-    final_root = round((x_val + next_x) / 2.0, 6)
-    
-    return steps, f"Approx Root: {final_root:.6f}"
+    return steps, "Error: Max iterations reached without satisfying tolerance."

@@ -14,6 +14,7 @@ def _format_gauss_seidel_result(values, iteration_count, residuals):
         f"Error {idx} = {float(residual):.6f}"
         for idx, residual in enumerate(residuals, start=1)
     )
+
     return (
         f"{format_solution(values)} | "
         f"Iterations = {iteration_count} | "
@@ -22,6 +23,7 @@ def _format_gauss_seidel_result(values, iteration_count, residuals):
 
 
 def gauss_seidel_method(matrix_str, tol, max_iter, initial_guess_str=""):
+
     try:
         matrix_a, vector_b = parse_augmented_matrix(matrix_str)
     except ValueError as e:
@@ -31,7 +33,9 @@ def gauss_seidel_method(matrix_str, tol, max_iter, initial_guess_str=""):
         return None, "Gauss-Seidel requires exactly 3 linear equations with 3 variables."
 
     for row_idx in range(3):
+
         diagonal = round(abs(float(matrix_a[row_idx][row_idx])), 6)
+
         off_diagonal_sum = round(
             sum(
                 abs(float(matrix_a[row_idx][col_idx]))
@@ -48,21 +52,48 @@ def gauss_seidel_method(matrix_str, tol, max_iter, initial_guess_str=""):
     variable_names = variable_labels(len(vector_b))
 
     try:
-        current_values = parse_initial_guesses(initial_guess_str, len(vector_b))
+        current_values = parse_initial_guesses(
+            initial_guess_str,
+            len(vector_b)
+        )
         current_values = [round(float(v), 6) for v in current_values]
+
     except ValueError as e:
         return None, str(e)
 
     steps = []
 
-    residuals = np.abs(np.dot(matrix_a, current_values) - vector_b)
+    # -------------------------
+    # ITERATION 1 (INITIAL GUESS)
+    # -------------------------
 
-    if all(float(residual) < tol for residual in residuals):
-        return [], _format_gauss_seidel_result(current_values, 0, residuals)
+    initial_step = {"Iteration": 1}
 
-    for iteration in range(1, max_iter + 1):
+    for variable_name, value in zip(variable_names, current_values):
+        initial_step[variable_name] = f"{value:.6f}"
+
+    residuals = vector_b - np.dot(matrix_a, current_values)
+
+    for eq_idx, residual in enumerate(residuals, start=1):
+        initial_step[f"Error {eq_idx}"] = f"{float(residual):.6f}"
+
+    steps.append(initial_step)
+
+    if all(abs(float(residual)) < tol for residual in residuals):
+        return steps, _format_gauss_seidel_result(
+            current_values,
+            1,
+            residuals
+        )
+
+    # -------------------------
+    # ITERATION 2+
+    # -------------------------
+
+    for iteration in range(2, max_iter + 2):
 
         for row_idx in range(len(vector_b)):
+
             if abs(matrix_a[row_idx][row_idx]) < 1e-12:
                 return None, f"Error: Zero diagonal element at row {row_idx + 1}."
 
@@ -81,14 +112,15 @@ def gauss_seidel_method(matrix_str, tol, max_iter, initial_guess_str=""):
         for variable_name, value in zip(variable_names, current_values):
             step[variable_name] = f"{value:.6f}"
 
-        residuals = np.abs(np.dot(matrix_a, current_values) - vector_b)
+        # MATCH INSTRUCTOR SIGNS
+        residuals = vector_b - np.dot(matrix_a, current_values)
 
         for eq_idx, residual in enumerate(residuals, start=1):
             step[f"Error {eq_idx}"] = f"{float(residual):.6f}"
 
         steps.append(step)
 
-        if all(float(residual) < tol for residual in residuals):
+        if all(abs(float(residual)) < tol for residual in residuals):
             return steps, _format_gauss_seidel_result(
                 current_values,
                 iteration,
@@ -97,6 +129,6 @@ def gauss_seidel_method(matrix_str, tol, max_iter, initial_guess_str=""):
 
     return steps, _format_gauss_seidel_result(
         current_values,
-        max_iter,
+        max_iter + 1,
         residuals
     )
