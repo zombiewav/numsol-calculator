@@ -47,10 +47,11 @@ def newton_raphson_method(f_lambda, x0, tol, max_iter, func_str):
         ratio = retain_6(fx / dfx)
         next_x = retain_6(curr_x - ratio)
 
+        # FIXED ERROR COMPUTATION
         if abs(next_x) < 1e-12:
             error = 0.0
         else:
-            error = retain_6(abs((next_x - curr_x) / next_x))
+            error = abs((next_x - curr_x) / next_x)
 
         error_percent = retain_6(error * 100)
 
