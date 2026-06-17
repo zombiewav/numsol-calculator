@@ -2,6 +2,7 @@ import ast
 import re
 import numpy as np
 import sympy as sp
+from decimal import Decimal, ROUND_HALF_UP
 from sympy.parsing.sympy_parser import (
     implicit_multiplication_application,
     parse_expr,
@@ -150,10 +151,17 @@ def format_solution(values):
         for label, value in zip(labels, values)
     )
 
+def retain_6(value):
+    return float(
+        Decimal(str(value)).quantize(
+            Decimal("0.000001"),
+            rounding=ROUND_HALF_UP
+        )
+    )
 
 def evaluate_iteration_equation(coeff_row, rhs, values_used, solve_index):
 
-    diagonal = float(coeff_row[solve_index])
+    diagonal = retain_6(coeff_row[solve_index])
 
     sigma = 0.0
     terms = []
@@ -163,18 +171,19 @@ def evaluate_iteration_equation(coeff_row, rhs, values_used, solve_index):
         if col_idx == solve_index:
             continue
 
-        coefficient = float(coefficient)
-        used_value = float(values_used[col_idx])
+        coefficient = retain_6(coefficient)
+        used_value = retain_6(values_used[col_idx])
 
-        term = coefficient * used_value
-        sigma += term
+        term = retain_6(coefficient * used_value)
+        sigma = retain_6(sigma + term)
 
         terms.append(
             f"({coefficient:.6f}*{used_value:.6f})"
         )
 
-    result = (float(rhs) - sigma) / diagonal
-    result = round(result, 6)
+    numerator = retain_6(float(rhs) - sigma)
+
+    result = retain_6(numerator / diagonal)
 
     terms_text = " + ".join(terms) if terms else "0.000000"
 
