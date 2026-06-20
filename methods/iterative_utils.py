@@ -161,7 +161,7 @@ def retain_6(value):
 
 def evaluate_iteration_equation(coeff_row, rhs, values_used, solve_index):
 
-    diagonal = retain_6(coeff_row[solve_index])
+    diagonal = float(coeff_row[solve_index])
 
     sigma = 0.0
     terms = []
@@ -171,19 +171,31 @@ def evaluate_iteration_equation(coeff_row, rhs, values_used, solve_index):
         if col_idx == solve_index:
             continue
 
-        coefficient = retain_6(coefficient)
-        used_value = retain_6(values_used[col_idx])
+        coefficient = float(coefficient)
+        used_value = float(values_used[col_idx])
 
-        term = retain_6(coefficient * used_value)
-        sigma = retain_6(sigma + term)
+        term = coefficient * used_value
+        sigma += term
 
         terms.append(
             f"({coefficient:.6f}*{used_value:.6f})"
         )
 
-    numerator = retain_6(float(rhs) - sigma)
+    numerator = float(rhs) - sigma
 
-    result = retain_6(numerator / diagonal)
+    result_raw = numerator / diagonal
+
+    if solve_index == 0 and result_raw > 13.5:
+
+        print("\n==============================")
+        print(f"RAW RESULT     : {repr(result_raw)}")
+        print(f"ROUNDED RESULT : {round(result_raw, 6)}")
+        print(f"SIGMA          : {repr(sigma)}")
+        print(f"NUMERATOR      : {repr(numerator)}")
+        print(f"DIAGONAL       : {repr(diagonal)}")
+        print("==============================\n")
+
+    result = retain_6(result_raw)
 
     terms_text = " + ".join(terms) if terms else "0.000000"
 
